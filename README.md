@@ -1,7 +1,7 @@
-# cxgame -- A Cryptocurrency Exchange Game
+# cxgame: A Cryptocurrency Exchange Game
 
 cxgame is a fake cryptocurrency exchange that has a few goals in mind:
-1. Educational: Learn or test out new programmatic trading stategies.
+1. Educational: Learn or test out new programmatic trading strategies.
 2. A game: Battle other bots to test your skills.
 
 cxgame has 3 primary components:
@@ -43,38 +43,46 @@ The primary websocket server that runs the exchange:
 
 ## Exchange Init Options
 
-`CxExchange()` init options:
+`CxExchange()` __init__ options:
 
 * port -- Websocket listen port.
-  default: 9877
+  default: 9877 (int)
 
 * bind -- Address(es) to listen on.
-  default: 0.0.0.0
+  default: 0.0.0.0 (str)
 
 * usd_start -- New users will start with this much USD in their wallet.
-  default: 10000.00
+  default: 10000.00 (Decimal, int, str, or float. Auto-converts to Decimal.)
 
 * crypto_start -- New users will start with this much crypto in their wallet.
-  default: 10.0
+  default: 10.0 (Decimal, int, str, or float. Auto-converts to Decimal.)
 
 * user_limit -- The max amount of users allowed to connect.
-  default: None
+  default: None (int)
 
 * time_limit -- Exchange will run for this amount of time (in seconds).
-  default: None
+  default: None (int)
 
 * whitelist -- A whitelist of users allowed to connect. All users must be
   connected before the exchange will run.
-  default: None
+  default: None (list[str])
 
 * pem_file -- Path to SSL key/cert file.
-  default: None
+  default: None (str)
 
 * ssl_verify -- Specify if SSL connections/certs are verified (set to False for
   self signed).
-  default: True
+  default: True (bool)
 
-## Commands
+* admin_secret -- The admin password. Required to run certain commands like
+  shutdown.
+  default: admin (str)
+
+* is_started -- Tells the server to accept commands or not. If False, commands
+  are rejected until the 'start' command is issued.
+  default: True (bool)
+
+# Exchange and Client Commands
 
 The following is a list and example of the exchange server's commands. These
 are also implemented on the client side `CxClient`, as shown in the examples.
@@ -87,12 +95,26 @@ contains these variables:
    the type method that was called.
 4. raw -- The raw json string returned from the server. For debugging purposes.
 
-### register
+## What is the `r()` Helper Method?
+
+The `CxClient.r()` helper method is a shortcut that wraps `websockets.connect`
+and is short for `run`.
+
+It does create a new connection on every call, so not ideal for long running
+clients and defeats the purpose of a websocket, but useful for testing or
+demonstration purposes. See the `cxgame/client.py` source code `r()` and
+`runcmd()` methods for more explanation.
+
+## register
 Register a new user on the exchange. The response will contain a token for
 future authentication.
 
 ```python
-cx = CxClient(user='new-username123', websocket=websocket)
+from cxgame.client import CxClient
+```
+
+```python
+cx = CxClient(user='new-username123', uri='ws://mtingers.com:9877')
 response = cx.r('register')
 print(response.status, response.message)
 
@@ -102,31 +124,141 @@ if response.status:
 
 ```
 
-### auth
-### bcast
-### buy
-### buy_market
-### sell
-### sell_market
-### price
-### orders
-### all_orders
-### wallets
-### cancel
-### fills
-### completed
-### audit
+## auth
+```python
+cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
+response = cx.r('auth')
+```
+
+## bcast
+Broadcasts a message on the feed server:
+```python
+response = cx.r('broadcast', 'Hello, World!')
+```
+
+## buy
+Places a maker limit buy order:
+```python
+price = '999.99'
+size = '1.5'
+response = cx.r('buy', price, size)
+print('order:', response.data)
+```
+
+## buy_market
+Places a market buy order. This attempts to match limit sell orders that are
+the closest in price at the time of the market order:
+```python
+amount = '999.99' # The amount of your wallet's USD to use for this buy.
+response = cx.r('buy_market', amount)
+print('order:', response.data)
+```
+
+## sell
+Places a maker limit sell order:
+```python
+price = '1000.01'
+size = '1.5'
+response = cx.r('sell', price, size)
+```
+
+## sell_market
+Places a market sell order. This attempts to match limit buy orders that are
+the closest in price at the time of the market order:
+```python
+amount = '2.25' # The amount of your wallet's crypto to use for this sell.
+response = cx.r('sell_market', amount)
+```
+
+## price
+```python
+mid_market_price = cx.r('price').data
+```
+
+## orders
+Get your open orders:
+```python
+my_orders = cx.r('orders').data
+for order in my_orders:
+    print('id={} price={}'.format(order['id'], order['price']))
+```
+
+## all_orders
+Get all open orders (all users):
+```python
+all_orders = cx.r('all_orders').data
+for order in all_orders:
+    print('user={} id={} price={}'.format(
+        order['user'], order['id'], order['price'])
+    )
+```
+
+## wallets
+Get your current wallets for USD and crypto:
+```python
+wallets = cx.r('wallets').data
+print('crypto={} usd={}'.format(wallets['crypto'], wallets['usd']))
+```
+
+## cancel
+Cancel an order, by order ID:
+```python
+cancelled = cx.r('cancel', order_id)
+```
+
+## fills
+Get your fills. This is orders that were matched partially or full:
+```python
+my_fills = cx.r('fills').data
+for fill in my_fills:
+    print(fill)
+```
+
+## completed
+Get your completed orders. These are orders that were completed/filled.
+```python
+my_completed_orders = cx.r('completed').data
+for order in my_completed_orders:
+    print(order)
+```
+## audit
+For debugging and admin use. Runs an audit on all order status to detect bugs
+in the code (invalid states).
+
+## shutdown
+```python
+cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
+response = cx.r('auth')
+response = cx.r('shutdown', 'adminpassword123')
+```
+
+## start
+```python
+cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
+response = cx.r('auth')
+response = cx.r('start', 'adminpassword123')
+```
+
+## pause
+```python
+cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
+response = cx.r('auth')
+response = cx.r('pause', 'adminpassword123')
+```
+
+# Test Servers
+
+An open test exchange is running at: `ws://mtingers.com:9877`
+The feed for this server is at: `ws://mtingers.com:9876`
 
 
 # TODO
 
 1. Add admin user auth
-2. Add admin start and shutdown command. Reject commands until game starts.
-3. Finish mypy typing
-4. Finish docstrings
-5. Add logging
-6. Add state saving
-7. Finish user_limit
-8. Add tests
-9. Add PyPI
-10. Add server CLI arg parsing
+2. Finish mypy typing
+3. Finish docstrings
+4. Add logging
+5. Add state saving
+6. Add tests
+7. Add PyPI
+8. Add server CLI arg parsing

@@ -31,7 +31,7 @@ class CxClient:
         self.token = token
         self.websocket = websocket
         self.uri = uri
-        
+
     async def _send_recv(self, msg):
         response = Response()
         try:
@@ -56,6 +56,11 @@ class CxClient:
 
     async def auth(self):
         msg = {'cmd': 'auth', 'params': {'username': self.user, 'token':self.token}}
+        return await self._send_recv(msg)
+
+    async def shutdown(self, secret):
+        """Tell the server to shutdown. Requires an admin secret"""
+        msg = {'cmd': 'shutdown', 'params': {'secret': secret}}
         return await self._send_recv(msg)
 
     async def buy(self, price, size):

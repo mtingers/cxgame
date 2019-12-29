@@ -110,7 +110,9 @@ class CxExchange:
             crypto_start: Decimal = dec('10.0'),
             whitelist: set = None,
             pem_file: str = None,
-            ssl_verify: bool = True):
+            ssl_verify: bool = True,
+            admin_secret: str = 'admin',
+            is_started: bool = True):
         self.port = port
         self.bind = bind
         self.time_limit = time_limit
@@ -121,7 +123,9 @@ class CxExchange:
         self.pem_file = pem_file
         self.ssl_verify = ssl_verify
         self.clients = set()
+        self.admin_secret = admin_secret
         self.running = True
+        self.is_started = is_started
         # Accepted commands from clients
         # Make sure to update 'util.py' command list "CMDS"
         self.cmds = {
@@ -140,6 +144,8 @@ class CxExchange:
             'fills':self._fills,
             'completed':self._completed,
             'audit':self._audit,
+            'shutdown':self._shutdown,
+            'start':self._open_for_business,
         }
         self.time_start = time.time()
         self.price_history = deque(maxlen=3)
@@ -701,6 +707,42 @@ class CxExchange:
             return status_error('Must be authenticated.')
         return status_ok('Completed orders.', data=self.orders_completed)
 
+    def _shutdown(self, websocket:WebSocketServerProtocol, params:dict):
+        if not self._is_authed(websocket):
+            return status_error('Must be authenticated.')
+        if not 'secret' in params:
+            return status_error('Admin secret required.')
+        if self.admin_secret == params['secret']:
+            self.running = False
+            self._broadcast({'type':'shutdown', 'message':'Shutdown command.'})
+            # Force a time limit to trigger on next loop
+            # This way stats/csv will be dumped
+            self.time_limit = 1
+            return status_ok('Command accepted. Shutting down.')
+        return status_error('Invalid admin secret.')
+
+    def _open_for_business(self, websocket:WebSocketServerProtocol, params:dict):
+        if not self._is_authed(websocket):
+            return status_error('Must be authenticated.')
+        if not 'secret' in params:
+            return status_error('Admin secret required.')
+        if self.admin_secret == params['secret']:
+            self.is_started = True
+            self._broadcast({'type':'start', 'message':'Open for business.'})
+            return status_ok('Command accepted. Open for business.')
+        return status_error('Invalid admin secret.')
+
+    def _pause(self, websocket:WebSocketServerProtocol, params:dict):
+        if not self._is_authed(websocket):
+            return status_error('Must be authenticated.')
+        if not 'secret' in params:
+            return status_error('Admin secret required.')
+        if self.admin_secret == params['secret']:
+            self.is_started = False
+            self._broadcast({'type':'pause', 'message':'Server is paused.'})
+            return status_ok('Command accepted. Server is paused.')
+        return status_error('Invalid admin secret.')
+
     def _audit(self, websocket:WebSocketServerProtocol, params:dict):
         """Audit for invalid order states. It should return nothing if all is
         working properly."""
@@ -926,6 +968,8 @@ class CxExchange:
             return status_error('User already registered.')
         if self.whitelist and not user in self.whitelist:
             return status_error('User not in whitelist.')
+        if self.user_limit and len(self.users) > self.user_limit:
+            return status_error('User limit reached (%d)' % (self.user_limit))
         token = user_token()
         self.users[user] = token
         if not user in self.user_fills:
@@ -958,6 +1002,7 @@ class CxExchange:
         """Main server loop"""
         # self.running can be used to gracefully shutdown handlers
         while self.running:
+            await asyncio.sleep(0.1)
             if self.time_limit:
                 tdiff = time.time() - self.time_start
                 if tdiff > self.time_limit:
@@ -995,6 +1040,12 @@ class CxExchange:
 
             try:
                 message = await websocket.recv()
+                if not self.is_started:
+                    await websocket.send(
+                        cmd_error('Server is paused. Wait for admin "start" command.')
+                    )
+                    continue
+
                 data = jdecode(message)
                 cmd_type = get_cmd_type(data)
                 if not cmd_type:
@@ -1041,7 +1092,6 @@ class CxExchange:
                     #print('-'*80, '\n', tb, '\n')
                     pass
                 break
-            await asyncio.sleep(0.1)
 
     async def handler(self, websocket, path):
         """Event loop handler wrapper"""
