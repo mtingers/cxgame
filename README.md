@@ -82,11 +82,42 @@ async with websockets.connect(uri) as websocket:
     # Market value sell (tries to match closest limit orders)
     x = await cmd.sell_market('2.25')
     print(x)
-    
+
     # Getting other info
     my_open_orders = await cmd.orders()
     my_wallets = await cmd.wallets()
     my_fills = await cmd.fills()
     my_completed_order_detail = await cmd.completed()
     mid_market_price = await cmd.price()
+```
+
+# Example Feed Reader
+
+The following example shows how to read the message channel. This channel is
+useful for tracking events from all broadcasted activity (e.g. sells, buys,
+server messages, etc).
+
+```python
+import ssl
+import asyncio
+import websockets
+import sys
+
+async def feed():
+    ssl_context = None
+    if len(sys.argv) == 2:
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.load_verify_locations(sys.argv[1])
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        uri = "wss://localhost:9876"
+    else:
+        uri = "ws://localhost:9876"
+    async with websockets.connect(uri, ssl=ssl_context) as websocket:
+        while 1:
+            response = await websocket.recv()
+            print(response)
+
+if __name__ == '__main__':
+    asyncio.get_event_loop().run_until_complete(feed())
 ```
