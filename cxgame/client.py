@@ -17,7 +17,7 @@ class CxCmdClient:
         self.user = user
         self.token = token
         self.websocket = websocket
-    
+
     async def _send_recv(self, msg):
         await self.websocket.send(json.dumps(msg))
         x = await self.websocket.recv()
@@ -30,7 +30,7 @@ class CxCmdClient:
         if j['status']:
             self.token = j['data']
         return j
-    
+
     async def auth(self):
         msg = {'cmd': 'auth', 'params': {'username': self.user, 'token':self.token}}
         return await self._send_recv(msg)
@@ -40,18 +40,18 @@ class CxCmdClient:
         size = dec(size, prec=ROUND_CRYPTO)
         msg = {'cmd':'buy', 'params':{'price':dec_str(price), 'size':dec_str(size)}}
         return await self._send_recv(msg)
-    
+
     async def buy_market(self, amount):
         amount = dec(amount, prec=ROUND_USD)
         msg = {'cmd':'buy_market', 'params':{'amount':dec_str(amount)}}
         return await self._send_recv(msg)
-    
+
     async def sell(self, price, size):
         price = dec(price, prec=ROUND_USD)
         size = dec(size, prec=ROUND_CRYPTO)
         msg = {'cmd':'sell', 'params':{'price':dec_str(price), 'size':dec_str(size)}}
         return await self._send_recv(msg)
-    
+
     async def sell_market(self, amount):
         amount = dec(amount, prec=ROUND_CRYPTO)
         msg = {'cmd':'sell_market', 'params':{'amount':dec_str(amount)}}
@@ -61,19 +61,19 @@ class CxCmdClient:
         msg = {'cmd': 'bcast', 'params': {'message':message}}
         j = await self._send_recv(msg)
         return j
-    
+
     async def cancel(self, order_id):
         msg = {'cmd': 'cancel', 'params': {'order_id':order_id}}
         j = await self._send_recv(msg)
         return j
-    
+
     async def price(self):
         msg = {'cmd': 'price', 'params': {}}
         j = await self._send_recv(msg)
         if j['status']:
             return j['data']
         return False
-    
+
     async def audit(self):
         msg = {'cmd': 'audit', 'params': {}}
         j = await self._send_recv(msg)
@@ -87,28 +87,28 @@ class CxCmdClient:
         if j['status']:
             return j['data']
         return False
-    
+
     async def fills(self):
         msg = {'cmd': 'fills', 'params': {}}
         j = await self._send_recv(msg)
         if j['status']:
             return j['data']
         return False
-    
+
     async def completed(self):
         msg = {'cmd': 'completed', 'params': {}}
         j = await self._send_recv(msg)
         if j['status']:
             return j['data']
         return False
-    
+
     async def all_orders(self):
         msg = {'cmd': 'all_orders', 'params': {}}
         j = await self._send_recv(msg)
         if j['status']:
             return j['data']
         return False
-    
+
     async def wallets(self):
         msg = {'cmd': 'wallets', 'params': {}}
         j = await self._send_recv(msg)
