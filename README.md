@@ -1,4 +1,13 @@
-cxgame -- The Crypto Exchange Game
+# cxgame
+cxgame -- A Cryptocurrency Exchange Game
+
+The purpose of cxgame is to battle other players on a fake cryptocurrency
+exchange. The winner is decided by who has the most holdings after a time limit
+is hit. Each player writes their own code using the `cxgame.client` module.
+
+cxgame can run in various modes (time limit, endless, whitelisted users, etc).
+See the documentation below for server and client examples. Also take a look
+at the `examples/` directory for more information.
 
 # Websocket Server Options (CxCmd)
 
