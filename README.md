@@ -111,3 +111,19 @@ async def feed():
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(feed())
 ```
+
+# Test Server
+
+There currently is a test server running at `ws://mtingers.com:9877`. Feed is
+at `ws://mtingers.com:9876`.
+
+Example of how to test:
+```python
+>>> import cxgame.client
+>>> from cxgame.client import *
+>>> cxgame.client.TEST_URI = 'ws://mtingers.com:9877'
+>>>
+>>> m('price')
+>>> m('buy', '999.99', '1')
+>>> m('wallets')
+```

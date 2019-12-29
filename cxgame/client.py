@@ -122,9 +122,10 @@ The following is a test client implementation.
 
 TEST_TOKEN = None
 TEST_USER = None
+TEST_URI = None
 async def runcmd(method, *a):
-    global TEST_TOKEN, TEST_USER
-    uri = "ws://localhost:9877"
+    global TEST_TOKEN, TEST_USER, TEST_URI
+    uri = TEST_URI
     async with websockets.connect(uri) as websocket:
         if not TEST_USER:
             username = 'bot-'+str(random.randint(0,1000000000))
@@ -146,7 +147,7 @@ async def runcmd(method, *a):
         return x
 
 def m(method, *a):
-    global TEST_TOKEN, TEST_USER
+    global TEST_TOKEN, TEST_USER, TEST_URI
     if 'reset' == method.strip():
         TEST_TOKEN = None
         TEST_USER = None
