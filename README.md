@@ -116,7 +116,7 @@ from cxgame.client import CxClient
 ```python
 cx = CxClient(user='new-username123', uri='ws://mtingers.com:9877')
 response = cx.r('register')
-print(response.status, response.message)
+print(response.status, response.msg)
 
 # If successful, store the token for later auth
 if response.status:
