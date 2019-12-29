@@ -28,6 +28,9 @@ No PyPI package as of yet. Install using:
 3. `pip install -r requirements.txt`
 4. `python setup.py install`
 
+There will now be a command `cxgame` that will start the server with default
+options (runs `cxgame.server.main()`).
+
 # The Exchange Server (cxgame.server.CxExchange)
 
 The primary websocket server that runs the exchange:
