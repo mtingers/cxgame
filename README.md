@@ -117,7 +117,8 @@ if __name__ == '__main__':
 There currently is a test server running at `ws://mtingers.com:9877`. Feed is
 at `ws://mtingers.com:9876`.
 
-Example of how to test:
+Example of how to test. Note that this generates a random username for you via
+the test client. `m()` is a wrapper to CxCmdClient class:
 ```python
 >>> import cxgame.client
 >>> from cxgame.client import *
@@ -126,4 +127,5 @@ Example of how to test:
 >>> m('price')
 >>> m('buy', '999.99', '1')
 >>> m('wallets')
+>>> m('reset')
 ```

@@ -128,7 +128,7 @@ async def runcmd(method, *a):
     uri = TEST_URI
     async with websockets.connect(uri) as websocket:
         if not TEST_USER:
-            username = 'bot-'+str(random.randint(0,1000000000))
+            username = 'test-'+str(random.randint(0,1000000000))
             TEST_USER = username
             print('new_user_generated:', username)
         cmd = CxCmdClient(user=TEST_USER, websocket=websocket, token=TEST_TOKEN)
