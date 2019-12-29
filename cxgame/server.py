@@ -714,7 +714,6 @@ class CxExchange:
         if not 'secret' in params:
             return status_error('Admin secret required.')
         if self.admin_secret == params['secret']:
-            self.running = False
             self._broadcast({'type':'shutdown', 'message':'Shutdown command.'})
             # Force a time limit to trigger on next loop
             # This way stats/csv will be dumped
