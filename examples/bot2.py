@@ -1,6 +1,8 @@
 import time
 from random import uniform, randint
 from cxgame.client import *
+import cxgame.client
+cxgame.client.TEST_URI = 'ws://mtingers.com:9877'
 
 def main():
     while 1:
