@@ -104,7 +104,7 @@ import websockets
 
 async def feed():
     uri = 'ws://localhost:9876'
-    async with websockets.connect(uri, ssl=ssl_context) as websocket:
+    async with websockets.connect(uri) as websocket:
         while 1:
             response = await websocket.recv()
             print(response)
