@@ -19,6 +19,14 @@ class Response:
         self.data = data
         self.raw = raw
 
+    def __str__(self):
+        return 'Response(status={}, msg={}, data={})'.format(
+            self.status, self.msg, self.data
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
 class CxClient:
     def __init__(self, user=None, websocket=None, token=None, uri=None):
         """
@@ -62,12 +70,12 @@ class CxClient:
         """Tell the server to shutdown. Requires an admin secret"""
         msg = {'cmd': 'shutdown', 'params': {'secret': secret}}
         return await self._send_recv(msg)
-    
+
     async def start(self, secret):
         """Tell the server to start. Requires an admin secret"""
         msg = {'cmd': 'start', 'params': {'secret': secret}}
         return await self._send_recv(msg)
-    
+
     async def pause(self, secret):
         """Tell the server to pause. Requires an admin secret"""
         msg = {'cmd': 'pause', 'params': {'secret': secret}}
@@ -142,12 +150,9 @@ class CxClient:
     async def runcmd(self, method, *a):
         async with websockets.connect(self.uri) as websocket:
             self.websocket = websocket
-            if not self.token:
-                response = await self.register()
-            elif self.user:
-                response = await cmd.auth()
-            else:
-                raise Exception('Username and/or token is not set.')
+            # Need to auth on this websocket connection every call
+            if self.token and self.user:
+                response = await self.auth()
             m = getattr(self, method, None)
             if not m:
                 raise Exception('Invalid command name: %s' % (method))
