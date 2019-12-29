@@ -43,6 +43,9 @@ at the `examples/` directory for more information.
 
 Example server, manually start feed and cmd websocket servers:
 ```python
+import threading
+from cxgame import server
+
 threads = []
 feed_server = server.CxFeed()
 cmd_server = server.CxCmd(time_limit=300) # Shuts down after 5 minutes
@@ -59,6 +62,7 @@ for t in threads:
 
 # Example Client
 ```python
+import random
 from cxgame.client import *
 
 uri = "ws://localhost:9877"
