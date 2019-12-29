@@ -41,8 +41,8 @@ STATE = {
 
 class CxFeed:
     """The broadcast channel. This websocket server broadcasts messages to all
-    connected clients. Messages come from the CxCmd websocket server, usually
-    in response to CxCmd server client commands (e.g. buy/sell).
+    connected clients. Messages come from the CxExchange websocket server, usually
+    in response to CxExchange server client commands (e.g. buy/sell).
     """
     def __init__(self,
             port: int = 9876,
@@ -100,7 +100,7 @@ class CxFeed:
         asyncio.get_event_loop().run_forever()
 
 
-class CxCmd:
+class CxExchange:
     def __init__(self,
             port: int = 9877,
             bind: str = '0.0.0.0',
@@ -1075,11 +1075,11 @@ class CxCmd:
 
 def main():
     """TODO:
-        - Add command line parser for CxCmd options.
+        - Add command line parser for CxExchange options.
     """
     threads = []
     f = CxFeed()
-    c = CxCmd()
+    c = CxExchange()
     t = threading.Thread(target=f.start)
     threads.append(t)
     t.start()

@@ -1,14 +1,24 @@
-# cxgame
-cxgame -- A Cryptocurrency Exchange Game
+# cxgame -- A Cryptocurrency Exchange Game
 
-The purpose of cxgame is to battle other players on a fake cryptocurrency
-exchange. The winner is decided by who has the most holdings after a time limit
-is reached or the server receives the admin shutdown command. Each player
-writes their own code using the `cxgame.client` module.
+cxgame is a fake cryptocurrency exchange that has a few goals in mind:
+1. Educational: Learn or test out new programmatic trading stategies.
+2. A game: Battle other bots to test your skills.
+
+cxgame has 3 primary components:
+1. `cxgame.server.CxExchange` -- The exchange server
+2. `cxgame.server.CxFeed` -- The broadcast channel. Exchange activity is
+    broadcasted to all connected clients here (e.g. orders, server messages)
+3. `cxgame.client.CxClient` -- The API for creating your own client to
+    communicate with the CxExchange server.
 
 cxgame can run in various modes (time limit, endless, whitelisted users, etc).
 See the documentation below for server and client examples. Also take a look
 at the `examples/` directory for more information.
+
+# Contributing
+
+If you find missing features or bugs, please open an issue or send pull
+requests.
 
 # Install
 
@@ -18,7 +28,22 @@ No PyPI package as of yet. Install using:
 3. `pip install -r requirements.txt`
 4. `python setup.py install`
 
-# Websocket Server Options (CxCmd)
+# The Exchange Server (cxgame.server.CxExchange)
+
+The primary websocket server that runs the exchange:
+
+1. Registration and authentication. Stores user credentials.
+2. Stores user wallets (USD and crypto).
+3. Sets the (mid) market price.
+4. Handles limit orders (buy, sell, cancel).
+5. Handles market orders (buy & sell at market price).
+6. Stores past completed order detail.
+7. Stores past filled orders (order matches).
+8. Sends information to the feed server to broadcast messages.
+
+## Exchange Init Options
+
+`CxExchange()` init options:
 
 * port -- Websocket listen port.
   default: 9877
@@ -42,101 +67,56 @@ No PyPI package as of yet. Install using:
   connected before the exchange will run.
   default: None
 
-* pem_file -- Path to SSL certificate key/cert file.
+* pem_file -- Path to SSL key/cert file.
   default: None
 
 * ssl_verify -- Specify if SSL connections/certs are verified (set to False for
   self signed).
   default: True
 
-Example server, manually start feed and cmd websocket servers:
-```python
-import threading
-from cxgame import server
+## Commands
 
-threads = []
-feed_server = server.CxFeed()
-cmd_server = server.CxCmd(time_limit=300) # Shuts down after 5 minutes
-th1 = threading.Thread(target=feed_server.start)
-th2 = threading.Thread(target=cmd_server.start)
-th1.start()
-th2.start()
-threads.append(th1)
-threads.append(th2)
-for t in threads:
-    t.join()
-```
+The following is a list and example of the exchange server's commands. These
+are also implemented on the client side `CxClient`, as shown in the examples.
 
+NOTE: The response is a `Response()` class from `cxgame.client.Response`. It
+contains these variables:
+1. status -- True or False
+2. msg -- Free text response. Helpful for debugging errors.
+3. data -- The data line. It has a varying type in the response and depends on
+   the type method that was called.
+4. raw -- The raw json string returned from the server. For debugging purposes.
 
-# Example Client
-```python
-from cxgame.client import *
-
-uri = 'ws://localhost:9877'
-async with websockets.connect(uri) as websocket:
-    username = 'test-user'
-    cmd = CxCmdClient(user=username, websocket=websocket)
-    # Register the username
-    x = await cmd.register()
-    token = x['data'] # This is the token for future auth
-
-    # Limit buy
-    x = await cmd.buy('999.99', '1.321')
-    print(x)
-    # Cancel limit buy
-    await cmd.cancel(x['data']['id'])
-
-    # Market value sell (tries to match closest limit orders)
-    x = await cmd.sell_market('2.25')
-    print(x)
-
-    # Getting other info
-    my_open_orders = await cmd.orders()
-    my_wallets = await cmd.wallets()
-    my_fills = await cmd.fills()
-    my_completed_order_detail = await cmd.completed()
-    mid_market_price = await cmd.price()
-```
-
-# Example Feed Reader
-
-The following example shows how to read the message channel. This channel is
-useful for tracking events from all broadcasted activity (e.g. sells, buys,
-server messages, etc).
+### register
+Register a new user on the exchange. The response will contain a token for
+future authentication.
 
 ```python
-import sys
-import asyncio
-import websockets
+cx = CxClient(user='new-username123', websocket=websocket)
+response = cx.r('register')
+print(response.status, response.message)
 
-async def feed():
-    uri = 'ws://localhost:9876'
-    async with websockets.connect(uri) as websocket:
-        while 1:
-            response = await websocket.recv()
-            print(response)
+# If successful, store the token for later auth
+if response.status:
+    token = response.data
 
-if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(feed())
 ```
 
-# Test Server
+### auth
+### bcast
+### buy
+### buy_market
+### sell
+### sell_market
+### price
+### orders
+### all_orders
+### wallets
+### cancel
+### fills
+### completed
+### audit
 
-There currently is a test server running at `ws://mtingers.com:9877`. Feed is
-at `ws://mtingers.com:9876`.
-
-Example of how to test. Note that this generates a random username for you via
-the test client. `m()` is a wrapper to CxCmdClient class:
-```python
->>> import cxgame.client
->>> from cxgame.client import *
->>> cxgame.client.TEST_URI = 'ws://mtingers.com:9877'
->>>
->>> m('price')
->>> m('buy', '999.99', '1')
->>> m('wallets')
->>> m('reset')
-```
 
 # TODO
 

@@ -12,24 +12,47 @@ import pickle
 from pprint import pprint
 from .util import *
 
-class CxCmdClient:
-    def __init__(self, user=None, websocket=None, token=None):
+class Response:
+    def __init__(self, status=False, msg=None, data=None, raw=None):
+        self.status = status
+        self.msg = msg
+        self.data = data
+        self.raw = raw
+
+class CxClient:
+    def __init__(self, user=None, websocket=None, token=None, uri=None):
+        """
+        Note: if a websocket is specified, this is an existing connection.
+        Specifying a websocket is like the runcmd() method, but you're in
+        control of the socket. If you call r() or runcmd(), they will replace
+        self.websocket.
+        """
         self.user = user
         self.token = token
         self.websocket = websocket
-
+        self.uri = uri
+        
     async def _send_recv(self, msg):
-        await self.websocket.send(json.dumps(msg))
-        x = await self.websocket.recv()
-        j = json.loads(x)
-        return j
+        response = Response()
+        try:
+            await self.websocket.send(json.dumps(msg))
+            x = await self.websocket.recv()
+            j = json.loads(x)
+            response.status = j['status']
+            response.msg = j['message']
+            response.data = j['data']
+            response.raw = x
+        except Exception as error:
+            response.status = False
+            response.msg = str(error)
+        return response
 
     async def register(self):
         msg = {'cmd': 'register', 'params': {'username': self.user}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            self.token = j['data']
-        return j
+        response = await self._send_recv(msg)
+        if response.status:
+            self.token = response.data
+        return response
 
     async def auth(self):
         msg = {'cmd': 'auth', 'params': {'username': self.user, 'token':self.token}}
@@ -59,97 +82,66 @@ class CxCmdClient:
 
     async def broadcast(self, message):
         msg = {'cmd': 'bcast', 'params': {'message':message}}
-        j = await self._send_recv(msg)
-        return j
+        return await self._send_recv(msg)
 
     async def cancel(self, order_id):
         msg = {'cmd': 'cancel', 'params': {'order_id':order_id}}
-        j = await self._send_recv(msg)
-        return j
+        return await self._send_recv(msg)
 
     async def price(self):
         msg = {'cmd': 'price', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        response = await self._send_recv(msg)
+        response.data = dec(response.data, prec=ROUND_USD)
+        return response
 
     async def audit(self):
         msg = {'cmd': 'audit', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
     async def orders(self):
         msg = {'cmd': 'orders', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
     async def fills(self):
         msg = {'cmd': 'fills', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
     async def completed(self):
         msg = {'cmd': 'completed', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
     async def all_orders(self):
         msg = {'cmd': 'all_orders', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
     async def wallets(self):
         msg = {'cmd': 'wallets', 'params': {}}
-        j = await self._send_recv(msg)
-        if j['status']:
-            return j['data']
-        return False
+        return await self._send_recv(msg)
 
-"""
-The following is a test client implementation.
-"""
+    def random_username(self, prefix='test'):
+        username = prefix+'-'+str(random.randint(0,1000))+str(time.time())
+        self.user = username
+        self.token = None
+        return username
 
-TEST_TOKEN = None
-TEST_USER = None
-TEST_URI = None
-async def runcmd(method, *a):
-    global TEST_TOKEN, TEST_USER, TEST_URI
-    uri = TEST_URI
-    async with websockets.connect(uri) as websocket:
-        if not TEST_USER:
-            username = 'test-'+str(random.randint(0,1000000000))
-            TEST_USER = username
-            print('new_user_generated:', username)
-        cmd = CxCmdClient(user=TEST_USER, websocket=websocket, token=TEST_TOKEN)
-        if not TEST_TOKEN:
-            x = await cmd.register()
-            TEST_TOKEN = x['data']
-        else:
-            cmd.token = TEST_TOKEN
-            x = await cmd.auth()
+    async def runcmd(self, method, *a):
+        async with websockets.connect(self.uri) as websocket:
+            self.websocket = websocket
+            if not self.token:
+                response = await self.register()
+            elif self.user:
+                response = await cmd.auth()
+            else:
+                raise Exception('Username and/or token is not set.')
+            m = getattr(self, method, None)
+            if not m:
+                raise Exception('Invalid command name: %s' % (method))
+            response = await m(*a)
+            return response
 
-        m = getattr(cmd, method, None)
-        if not m:
-            raise Exception('Invalid command name: %s' % (method))
-        x = await m(*a)
-        pprint(x)
-        return x
+    def r(self, method, *a):
+        if 'reset' == method.strip():
+            self.random_username()
+            return True
+        return asyncio.get_event_loop().run_until_complete(self.runcmd(method, *a))
 
-def m(method, *a):
-    global TEST_TOKEN, TEST_USER, TEST_URI
-    if 'reset' == method.strip():
-        TEST_TOKEN = None
-        TEST_USER = None
-        return None
-    return asyncio.get_event_loop().run_until_complete(runcmd(method, *a))
