@@ -1,0 +1,5 @@
+mypy
+mypy-extensions
+typed-ast
+typing-extensions
+websockets>=8.1
