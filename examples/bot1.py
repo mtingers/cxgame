@@ -4,8 +4,11 @@ from cxgame.client import *
 
 def main():
     cx = CxClient(uri='ws://mtingers.com:9877')
-    user = client.random_username()
+    user = cx.random_username()
+    cx.user = user
+    token = cx.r('register').data
     print('using username:', user)
+    print('token:', token)
 
     while 1:
         # Random numbers for buys/sells
@@ -16,13 +19,13 @@ def main():
         # Limit buy
         price = cx.r('price').data
         response = cx.r('buy', price-r1, r3)
-        print(response.status, response.msg, response.data)
+        print(response)
         time.sleep(uniform(0.5, 3.5))
 
         # Limit sell
         price = cx.r('price').data
         response = cx.r('sell', price+r2, r3)
-        print(response.status, response.msg, response.data)
+        print(response)
         time.sleep(uniform(0.5, 3.5))
 
         # Random buy/sell market price
@@ -39,15 +42,15 @@ def main():
                 cx.r('cancel', order['id'])
 
         # Getting other info
-        my_open_orders = await cx.orders().data
-        my_wallets = await cx.wallets().data
-        my_fills = await cx.fills().data
-        my_completed_order_detail = await cx.completed().data
-        mid_market_price = await cx.price().data
+        my_open_orders = cx.r('orders').data
+        my_wallets = cx.r('wallets').data
+        my_fills = cx.r('fills').data
+        my_completed_order_detail = cx.r('completed').data
+        mid_market_price = cx.r('price').data
 
         # Broadcast a message on the feed server
-        await cx.broadcast('Hello, World!')
+        cx.r('broadcast', 'Hello, World!')
+        time.sleep(10)
 
 if __name__ == '__main__':
     main()
-
