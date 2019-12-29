@@ -65,7 +65,7 @@ for t in threads:
 import random
 from cxgame.client import *
 
-uri = "ws://localhost:9877"
+uri = 'ws://localhost:9877'
 async with websockets.connect(uri) as websocket:
     username = 'bot-'+str(random.randint(0,1000000000))
     cmd = CxCmdClient(user=username, websocket=websocket)
@@ -98,21 +98,12 @@ useful for tracking events from all broadcasted activity (e.g. sells, buys,
 server messages, etc).
 
 ```python
-import ssl
+import sys
 import asyncio
 import websockets
-import sys
 
 async def feed():
-    ssl_context = None
-    if len(sys.argv) == 2:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ssl_context.load_verify_locations(sys.argv[1])
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        uri = "wss://localhost:9876"
-    else:
-        uri = "ws://localhost:9876"
+    uri = 'ws://localhost:9876'
     async with websockets.connect(uri, ssl=ssl_context) as websocket:
         while 1:
             response = await websocket.recv()
