@@ -10,6 +10,14 @@ cxgame can run in various modes (time limit, endless, whitelisted users, etc).
 See the documentation below for server and client examples. Also take a look
 at the `examples/` directory for more information.
 
+# Install
+
+No PyPI package as of yet. Install using:
+1. `python3 -m venv  venv`
+2. `source venv/bin/activate`
+3. `pip install -r requirements.txt`
+4. `python setup.py install`
+
 # Websocket Server Options (CxCmd)
 
 * port -- Websocket listen port.
