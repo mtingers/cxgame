@@ -90,6 +90,8 @@ CMDS = (
     'completed',
     'audit',
     'shutdown',
+    'start',
+    'pause',
 )
 
 def get_cmd_type(data):

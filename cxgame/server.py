@@ -146,6 +146,7 @@ class CxExchange:
             'audit':self._audit,
             'shutdown':self._shutdown,
             'start':self._open_for_business,
+            'pause':self._pause,
         }
         self.time_start = time.time()
         self.price_history = deque(maxlen=3)

@@ -62,6 +62,16 @@ class CxClient:
         """Tell the server to shutdown. Requires an admin secret"""
         msg = {'cmd': 'shutdown', 'params': {'secret': secret}}
         return await self._send_recv(msg)
+    
+    async def start(self, secret):
+        """Tell the server to start. Requires an admin secret"""
+        msg = {'cmd': 'start', 'params': {'secret': secret}}
+        return await self._send_recv(msg)
+    
+    async def pause(self, secret):
+        """Tell the server to pause. Requires an admin secret"""
+        msg = {'cmd': 'pause', 'params': {'secret': secret}}
+        return await self._send_recv(msg)
 
     async def buy(self, price, size):
         price = dec(price, prec=ROUND_USD)
