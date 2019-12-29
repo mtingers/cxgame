@@ -21,7 +21,7 @@ from typing import Any, Set
 from collections import deque
 import websockets
 from websockets.server import WebSocketServerProtocol
-from util import *
+from .util import *
 
 #STATE_LOCK = threading.Lock()
 STATE = {

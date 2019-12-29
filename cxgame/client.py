@@ -10,7 +10,7 @@ import queue
 import json
 import pickle
 from pprint import pprint
-from util import *
+from .util import *
 
 class CxCmdClient:
     def __init__(self, user=None, websocket=None, token=None):
