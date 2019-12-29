@@ -53,7 +53,7 @@ class CxFeed:
         self.bind = bind
         self.pem_file = pem_file
         self.ssl_verify = ssl_verify
-        self.clients: Set[WebSocketServerProtocol] = set()
+        self.clients = set()
         self.running = False
 
     @property
@@ -120,7 +120,7 @@ class CxCmd:
         self.whitelist = whitelist
         self.pem_file = pem_file
         self.ssl_verify = ssl_verify
-        self.clients: Set[WebSocketServerProtocol] = set()
+        self.clients = set()
         self.running = True
         # Accepted commands from clients
         # Make sure to update 'util.py' command list "CMDS"
