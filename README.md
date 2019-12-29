@@ -137,3 +137,16 @@ the test client. `m()` is a wrapper to CxCmdClient class:
 >>> m('wallets')
 >>> m('reset')
 ```
+
+# TODO
+
+1. Add admin user auth
+2. Add admin start and shutdown command. Reject commands until game starts.
+3. Finish mypy typing
+4. Finish docstrings
+5. Add logging
+6. Add state saving
+7. Finish user_limit
+8. Add tests
+9. Add PyPI
+10. Add server CLI arg parsing
