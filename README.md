@@ -3,7 +3,8 @@ cxgame -- A Cryptocurrency Exchange Game
 
 The purpose of cxgame is to battle other players on a fake cryptocurrency
 exchange. The winner is decided by who has the most holdings after a time limit
-is hit. Each player writes their own code using the `cxgame.client` module.
+is reached or the server receives the admin shutdown command. Each player
+writes their own code using the `cxgame.client` module.
 
 cxgame can run in various modes (time limit, endless, whitelisted users, etc).
 See the documentation below for server and client examples. Also take a look
