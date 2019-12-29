@@ -62,12 +62,11 @@ for t in threads:
 
 # Example Client
 ```python
-import random
 from cxgame.client import *
 
 uri = 'ws://localhost:9877'
 async with websockets.connect(uri) as websocket:
-    username = 'bot-'+str(random.randint(0,1000000000))
+    username = 'test-user'
     cmd = CxCmdClient(user=username, websocket=websocket)
     # Register the username
     x = await cmd.register()
