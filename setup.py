@@ -16,7 +16,6 @@ setup(
     author='Matth Ingersoll',
     author_email='matth@mtingers.com',
     packages=[name,],
-    license='Other/Proprietary License',
     long_description='Cryptocurrency Exchange Game',
     url='https://github.com/mtingers/cxgame',
     entry_points={
@@ -26,6 +25,7 @@ setup(
     scripts=glob.glob('bin/*'),
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
+        'OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
