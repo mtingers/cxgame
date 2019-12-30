@@ -17,8 +17,8 @@ at the `examples/` directory for more information.
 
 # Contributing
 
-If you find missing features or bugs, please open an issue or send pull
-requests.
+If you find missing features or bugs, please open an issue or a pull
+request.
 
 # Install
 
@@ -28,8 +28,8 @@ No PyPI package as of yet. Install using:
 3. `pip install -r requirements.txt`
 4. `python setup.py install`
 
-There will now be a command `cxgame` that will start the server with default
-options (runs `cxgame.server.main()`).
+After install, the command `cxgame` will be available. Running it starts the
+exchange and feed servers with default options (see: `cxgame.server.main()`).
 
 # The Exchange Server (cxgame.server.CxExchange)
 
@@ -248,6 +248,29 @@ cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
 response = cx.r('auth')
 response = cx.r('pause', 'adminpassword123')
 ```
+
+# The Feed Server (cxgame.server.CxFeed)
+
+Acts as a broadcast channel for the exchange server. A message queue is shared
+between CxExchange (producer) and CxFeed (consumer). Messages from CxExchange
+are consumed by CxFeed and sent to all clients connected to CxFeed.
+
+## Feed Server Init Options
+
+`CxFeed()` __init__ options:
+
+* port -- Websocket listen port.
+  default: 9876 (int)
+
+* bind -- Address(es) to listen on.
+  default: 0.0.0.0 (str)
+
+* pem_file -- Path to SSL key/cert file.
+  default: None (str)
+
+* ssl_verify -- Specify if SSL connections/certs are verified (set to False for
+  self signed).
+  default: True (bool)
 
 # Test Servers
 
