@@ -1,11 +1,4 @@
-"""
-TODO:
-    - Finish typing
-    - Finish docstrings
-    - Add logging
-    - Add state saving
-    - Finish user_limit
-"""
+import os
 import random
 import time
 import asyncio
@@ -16,6 +9,7 @@ import queue
 import json
 import pickle
 import traceback
+import argparse
 from pprint import pprint
 from typing import Any, Set
 from collections import deque
@@ -1040,14 +1034,14 @@ class CxExchange:
 
             try:
                 message = await websocket.recv()
-                if not self.is_started:
+                data = jdecode(message)
+                cmd_type = get_cmd_type(data)
+                if not self.is_started and cmd_type and not cmd_type in ('start', 'auth', 'register'):
                     await websocket.send(
                         cmd_error('Server is paused. Wait for admin "start" command.')
                     )
                     continue
 
-                data = jdecode(message)
-                cmd_type = get_cmd_type(data)
                 if not cmd_type:
                     await websocket.send(cmd_error('Invalid message'))
                 else:
@@ -1123,18 +1117,195 @@ class CxExchange:
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
 
+class CxServer:
+    def __init__(self,
+            exchange_port: int = 9877,
+            feed_port: int = 9876,
+            bind: str = '0.0.0.0',
+            time_limit: int = None,
+            user_limit: int = None,
+            usd_start: Decimal = dec('10000.00'),
+            crypto_start: Decimal = dec('10.0'),
+            whitelist: set = None,
+            pem_file: str = None,
+            ssl_verify: bool = True,
+            admin_secret: str = 'admin',
+            is_started: bool = True):
+        self.exchange_port = exchange_port
+        self.feed_port = feed_port
+        self.bind = bind
+        self.time_limit = time_limit
+        self.user_limit = user_limit
+        self.usd_start = dec(usd_start)
+        self.crypto_start = dec(crypto_start)
+        self.whitelist = whitelist
+        self.pem_file = pem_file
+        self.ssl_verify = ssl_verify
+        self.admin_secret = admin_secret
+        self.is_started = is_started
+
+    def start(self):
+        feed = CxFeed(
+            port=self.feed_port,
+            bind=self.bind,
+            pem_file=self.pem_file,
+            ssl_verify=self.ssl_verify,
+        )
+        exchange = CxExchange(
+            port=self.exchange_port,
+            bind=self.bind,
+            time_limit=self.time_limit,
+            user_limit=self.user_limit,
+            usd_start=self.usd_start,
+            crypto_start=self.crypto_start,
+            whitelist=self.whitelist,
+            admin_secret=self.admin_secret,
+            pem_file=self.pem_file,
+            ssl_verify=self.ssl_verify,
+            is_started=self.is_started,
+        )
+        t1 = threading.Thread(target=feed.start)
+        t2 = threading.Thread(target=exchange.start)
+        t1.start()
+        t2.start()
+        for t in (t1, t2):
+            t.join()
+
 def main():
-    """TODO:
-        - Add command line parser for CxExchange options.
+    """Provides the command line util 'cxserve'
     """
-    threads = []
-    f = CxFeed()
-    c = CxExchange()
-    t = threading.Thread(target=f.start)
-    threads.append(t)
-    t.start()
-    t = threading.Thread(target=c.start)
-    threads.append(t)
-    t.start()
-    for t in threads:
-        t.join()
+    parser = argparse.ArgumentParser(description='cxgame server')
+    parser.add_argument(
+        '-e',
+        '--exchangeport',
+        dest='exchangeport',
+        default=9877,
+        type=int,
+        help='Exchange server listen port.'
+    )
+    parser.add_argument(
+        '-f',
+        '--feedport',
+        dest='feedport',
+        default=9876,
+        type=int,
+        help='Feed server listen port.'
+    )
+    parser.add_argument(
+        '-b',
+        '--bindaddr',
+        dest='bindaddr',
+        default='0.0.0.0',
+        type=str,
+        help='The address to listen on.'
+    )
+    parser.add_argument(
+        '-t',
+        '--timelimit',
+        dest='timelimit',
+        default=None,
+        type=int,
+        help='Time limit that the exchange is open (in seconds).'
+    )
+    parser.add_argument(
+        '-u',
+        '--userlimit',
+        dest='userlimit',
+        default=None,
+        type=int,
+        help='Max number of registered users.'
+    )
+    parser.add_argument(
+        '-m',
+        '--usdstart',
+        dest='usdstart',
+        default=Decimal('10000.00'),
+        type=Decimal,
+        help='Amount of USD each user starts with.'
+    )
+    parser.add_argument(
+        '-c',
+        '--cryptostart',
+        dest='cryptostart',
+        default=Decimal('10.0'),
+        type=Decimal,
+        help='Amount of cryptocurrency each user starts with.'
+    )
+    parser.add_argument(
+        '-w',
+        '--whitelist',
+        dest='whitelist_path',
+        default=None,
+        type=str,
+        help='Path to newline separated list of whitelisted usernames.',
+    )
+    parser.add_argument(
+        '-a',
+        '--adminsecret',
+        dest='adminsecret',
+        default='admin_admin',
+        type=str,
+        help='The server admin password.'
+    )
+    parser.add_argument(
+        '-p',
+        '--pemfile',
+        dest='pemfile',
+        default=None,
+        type=str,
+        help='Path to SSL/TLS PEM file (enables SSL/TLS mode).'
+    )
+    parser.add_argument(
+        '-s',
+        '--sslverify',
+        dest='sslverify',
+        default='yes',
+        type=str,
+        help='Verify SSL certs (yes|no).',
+    )
+    parser.add_argument(
+        '-i',
+        '--started',
+        dest='started',
+        default='yes',
+        type=str,
+        help='Tells the server to accept commands or not (yes|no). If False, server is still able to register users. Useful for waiting for all users to connect before game starts.'
+    )
+    args = parser.parse_args()
+    if args.whitelist_path:
+        try:
+            whitelist = open(args.whitelist_path).read().strip().split('\n')
+        except Exception as err:
+            print(err)
+            exit(1)
+    else:
+        whitelist = None
+    if args.pemfile and not os.path.exists(args.pemfile):
+        print('ERROR: Could not find pem file path "{}"'.format(args.pemfile))
+        exit(1)
+    if args.adminsecret == 'admin_admin':
+        print('WARNING: Default admin password in use!')
+    if args.feedport == args.exchangeport:
+        print('ERROR: feedport and exchangeport cannot be the same.')
+        exit(1)
+    if not args.sslverify in ('yes', 'no'):
+        print('ERROR: sslverify must be "yes" or "no".')
+        exit(1)
+    if not args.started in ('yes', 'no'):
+        print('ERROR: started must be "yes" or "no".')
+        exit(1)
+    cxs = CxServer(
+        exchange_port=args.exchangeport,
+        feed_port=args.feedport,
+        bind=args.bindaddr,
+        time_limit=args.timelimit,
+        user_limit=args.userlimit,
+        usd_start=args.usdstart,
+        crypto_start=args.cryptostart,
+        whitelist=whitelist,
+        admin_secret=args.adminsecret,
+        pem_file=args.pemfile,
+        ssl_verify=args.sslverify,
+        is_started=args.started,
+    )
+    cxs.start()

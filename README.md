@@ -4,12 +4,15 @@ cxgame is a fake cryptocurrency exchange that has a few goals in mind:
 1. Educational: Learn or test out new programmatic trading strategies.
 2. A game: Battle other bots to test your skills.
 
-cxgame has 3 primary components:
+# Components
+
+cxgame has 4 primary components:
 1. `cxgame.server.CxExchange` -- The exchange server
 2. `cxgame.server.CxFeed` -- The broadcast channel. Exchange activity is
     broadcasted to all connected clients here (e.g. orders, server messages)
 3. `cxgame.client.CxClient` -- The API for creating your own client to
     communicate with the CxExchange server.
+4. `cxgame.server.CxServer` -- Wraps and controls `CxExchange` and `CxFeed`.
 
 cxgame can run in various modes (time limit, endless, whitelisted users, etc).
 See the documentation below for server and client examples. Also take a look
@@ -28,12 +31,12 @@ No PyPI package as of yet. Install using:
 3. `pip install -r requirements.txt`
 4. `python setup.py install`
 
-After install, the command `cxgame` will be available. Running it starts the
+After install, the command `cxserve` will be available. Running it starts the
 exchange and feed servers with default options (see: `cxgame.server.main()`).
 
-# The Exchange Server (cxgame.server.CxExchange)
+# The Exchange & Feed Servers (cxgame.server.CxServer)
 
-The primary websocket server that runs the exchange:
+The primary websocket servers that run the exchange and broadcast feed:
 
 1. Registration and authentication. Stores user credentials.
 2. Stores user wallets (USD and crypto).
@@ -42,14 +45,17 @@ The primary websocket server that runs the exchange:
 5. Handles market orders (buy & sell at market price).
 6. Stores past completed order detail.
 7. Stores past filled orders (order matches).
-8. Sends information to the feed server to broadcast messages.
+8. Sends information on the feed channel to broadcast messages to clients.
 
-## Exchange Init Options
+## Init Options
 
-`CxExchange()` __init__ options:
+`CxServer()` __init__ options:
 
-* port -- Websocket listen port.
+* exchange_port -- Websocket `CxExchange` listen port.
   default: 9877 (int)
+
+* feed_port -- Websocket `CxFeed` listen port.
+  default: 9876 (int)
 
 * bind -- Address(es) to listen on.
   default: 0.0.0.0 (str)
@@ -84,6 +90,17 @@ The primary websocket server that runs the exchange:
 * is_started -- Tells the server to accept commands or not. If False, commands
   are rejected until the 'start' command is issued.
   default: True (bool)
+
+NOTE: `CxServer` is a wrapper that passes down options to `CxExchange` and
+`CxFeed`.
+
+## Running A Server
+
+The command `cxserve` can be used to launch the exchange & feed server threads
+and comes with command line option parsing.
+
+To manually run a server, it can be done a few ways. Look at
+`examples/server.py` for a more in-depth example.
 
 # Exchange and Client Commands
 
@@ -248,29 +265,6 @@ cx = CxClient(user='root', uri='ws://mtingers.com:9877', token='123...')
 response = cx.r('auth')
 response = cx.r('pause', 'adminpassword123')
 ```
-
-# The Feed Server (cxgame.server.CxFeed)
-
-Acts as a broadcast channel for the exchange server. A message queue is shared
-between CxExchange (producer) and CxFeed (consumer). Messages from CxExchange
-are consumed by CxFeed and sent to all clients connected to CxFeed.
-
-## Feed Server Init Options
-
-`CxFeed()` __init__ options:
-
-* port -- Websocket listen port.
-  default: 9876 (int)
-
-* bind -- Address(es) to listen on.
-  default: 0.0.0.0 (str)
-
-* pem_file -- Path to SSL key/cert file.
-  default: None (str)
-
-* ssl_verify -- Specify if SSL connections/certs are verified (set to False for
-  self signed).
-  default: True (bool)
 
 # Test Servers
 

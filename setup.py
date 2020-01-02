@@ -19,7 +19,7 @@ setup(
     long_description='Cryptocurrency Exchange Game',
     url='https://github.com/mtingers/cxgame',
     entry_points={
-        'console_scripts': ['cxgame=cxgame.server:main',],
+        'console_scripts': ['cxserve=cxgame.server:main',],
     },
     install_requires=open('requirements.txt').read().strip().split('\n'),
     scripts=glob.glob('bin/*'),
